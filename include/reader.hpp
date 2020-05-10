@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 
 
 namespace MM
@@ -13,6 +14,11 @@ namespace MM
 
 namespace Problem
 {
+
+struct EmptyDirectory : public std::runtime_error
+{
+    explicit EmptyDirectory(std::string const&);
+};
 
 template <class Element>
 class Reader final

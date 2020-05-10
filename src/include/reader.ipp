@@ -10,8 +10,10 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <random>
+#include <vector>
 
 
 namespace MM
@@ -106,16 +108,18 @@ Reader<Element>::Reader(std::filesystem::path const& path)
     };
 
     if (fs::is_directory(path)) {
-        auto file_count = std::count_if(fs::directory_iterator{path}, fs::directory_iterator{},
+        std::vector<fs::directory_entry> entries;
+        std::copy_if(fs::directory_iterator{path}, fs::directory_iterator{},
+            std::back_inserter(entries),
             [](auto entry) { return entry.is_regular_file(); });
 
+        if (entries.empty()) {
+            throw EmptyDirectory{path};
+        }
+
         // randomly choose one
-        using std::next;
         std::random_device device;
-        construct_from_file(
-            *next(
-                fs::directory_iterator{path},
-                std::uniform_int_distribution<decltype(file_count)>{0, file_count - 1}(device)));
+        construct_from_file(entries.at(std::uniform_int_distribution<size_t>{0, entries.size() - 1}(device)));
 
     } else {
         construct_from_file(path);
