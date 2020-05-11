@@ -34,15 +34,15 @@ public:
 
     void get(
         Element* lhs, Element* rhs,
-        size_t lhs_pitch, size_t rhs_pitch);
+        size_t lhs_pitch, size_t rhs_pitch) const;
     Result<Element> score(
         const Element* calced, size_t pitch,
-        std::function<void(uint32_t row, uint32_t col, Element calced, Element answer)> violation_callback);
+        std::function<void(uint32_t row, uint32_t col, Element calced, Element answer)> violation_callback) const;
 
-    uint32_t lhs_rows() { return m_lhs_rows; }
-    uint32_t lhs_cols() { return m_lhs_cols; }
-    uint32_t rhs_rows() { return m_rhs_rows; }
-    uint32_t rhs_cols() { return m_rhs_cols; }
+    uint32_t lhs_rows() const { return m_lhs_rows; }
+    uint32_t lhs_cols() const { return m_lhs_cols; }
+    uint32_t rhs_rows() const { return m_rhs_rows; }
+    uint32_t rhs_cols() const { return m_rhs_cols; }
 
 private:
     class ImplBase;

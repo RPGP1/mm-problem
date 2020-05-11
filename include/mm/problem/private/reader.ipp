@@ -128,13 +128,13 @@ Reader<Element>::Reader(std::filesystem::path const& path)
 template <class Element>
 void Reader<Element>::get(
     Element* const lhs, Element* const rhs,
-    const size_t lhs_pitch, const size_t rhs_pitch)
+    const size_t lhs_pitch, const size_t rhs_pitch) const
 {
     pimpl->get(lhs, rhs, m_lhs_rows, m_lhs_cols, m_rhs_cols, lhs_pitch, rhs_pitch);
 }
 
 template <class Element>
-Result<Element> Reader<Element>::score(const Element* const calced, const size_t pitch, std::function<void(uint32_t row, uint32_t col, Element calced, Element answer)> violation_callback)
+Result<Element> Reader<Element>::score(const Element* const calced, const size_t pitch, std::function<void(uint32_t row, uint32_t col, Element calced, Element answer)> violation_callback) const
 {
     return pimpl->score(calced, m_lhs_rows, m_lhs_cols, m_rhs_cols, pitch, std::move(violation_callback));
 }

@@ -10,7 +10,7 @@ namespace Problem
 {
 
 template <class Element>
-struct Result {
+struct Result final {
     // how many digits the standards are relaxed
     static int loose_standard_digits, strict_standard_digits;
 
