@@ -1,6 +1,6 @@
 #pragma once
 
-#include "result.hpp"
+#include "mm/problem/result.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -17,7 +17,7 @@ namespace Problem
 
 struct EmptyDirectory : public std::runtime_error
 {
-    explicit EmptyDirectory(std::string const&);
+    explicit EmptyDirectory(std::filesystem::path const&);
 };
 
 template <class Element>
@@ -56,4 +56,4 @@ private:
 
 }  // namespace MM
 
-#include "reader.ipp"
+#include "mm/problem/private/reader.ipp"

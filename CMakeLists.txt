@@ -41,9 +41,7 @@ add_library(mm_problem INTERFACE)
 target_sources(mm_problem INTERFACE
     "${MM_PROBLEM_SOURCES}")
 target_include_directories(mm_problem INTERFACE
-    "include"
-    "src/include"
-    )
+    "include")
 
 target_compile_features(mm_problem INTERFACE
     cxx_std_17)

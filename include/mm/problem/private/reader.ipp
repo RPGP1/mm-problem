@@ -1,9 +1,9 @@
 #pragma once
 
-#include "reader.hpp"
+#include "mm/problem/reader.hpp"
 
-#include "definition.hpp"
-#include "is_large.hpp"
+#include "mm/problem/definition.hpp"
+#include "mm/problem/private/is_large.hpp"
 
 #include <algorithm>
 #include <array>
