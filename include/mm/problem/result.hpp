@@ -20,6 +20,12 @@ struct Result final {
     Element max_difference{0};
 };
 
+template <class Element>
+int Result<Element>::loose_standard_digits{0};
+
+template <class Element>
+int Result<Element>::strict_standard_digits{0};
+
 }  // namespace Problem
 
 }  // namespace MM
