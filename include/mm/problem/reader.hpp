@@ -15,10 +15,7 @@ namespace MM
 namespace Problem
 {
 
-struct EmptyDirectory : public std::runtime_error
-{
-    explicit EmptyDirectory(std::filesystem::path const&);
-};
+struct EmptyDirectory;
 
 template <class Element>
 class Reader final

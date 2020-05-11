@@ -21,6 +21,12 @@ namespace MM
 namespace Problem
 {
 
+struct EmptyDirectory : public std::runtime_error
+{
+    explicit EmptyDirectory(std::filesystem::path const&);
+};
+
+
 template <class Element>
 class Reader<Element>::ImplBase
 {
