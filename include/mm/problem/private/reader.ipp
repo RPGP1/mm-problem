@@ -6,7 +6,6 @@
 #include "mm/problem/private/is_large.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cmath>
 #include <fstream>
