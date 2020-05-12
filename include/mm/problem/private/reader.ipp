@@ -100,6 +100,7 @@ Reader<Element>::Reader(std::filesystem::path const& path)
 
     auto construct_from_file = [this](fs::path const& path) {
         std::ifstream ifs{path, std::ios_base::binary};
+        ifs.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
 
         ifs.read(reinterpret_cast<char*>(&m_lhs_rows), sizeof(m_lhs_rows));
         ifs.read(reinterpret_cast<char*>(&m_lhs_cols), sizeof(m_lhs_cols));
