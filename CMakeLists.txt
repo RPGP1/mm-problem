@@ -4,8 +4,10 @@ cmake_minimum_required(VERSION 3.8)
 # flags for executable file
 add_compile_options(
     $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Debug>:-Og\ -g>
-    $<$<CONFIG:RelWithDebgInfo>:-O3\ -g>
+    $<$<CONFIG:Debug>:-Og>
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:RelWithDebgInfo>:-O3>
+    $<$<CONFIG:RelWithDebgInfo>:-g>
     )
 # flags for compile errors
 add_compile_options(
