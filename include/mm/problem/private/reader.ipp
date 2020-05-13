@@ -231,7 +231,7 @@ void Reader<Element>::LargeImpl::get(
 
         uint32_t row{0};
         for (; row + repeat_rows <= rows; row += repeat_rows) {
-            for (uint32_t row_in_repetition; row_in_repetition < repeat_rows; row_in_repetition++) {
+            for (uint32_t row_in_repetition{0}; row_in_repetition < repeat_rows; row_in_repetition++) {
 
                 uint32_t col{0};
                 for (; col + repeat_cols <= cols; col += repeat_cols) {
@@ -244,7 +244,7 @@ void Reader<Element>::LargeImpl::get(
                     &dist[size_t{row + row_in_repetition} + col]);
             }
         }
-        for (uint32_t row_in_padding; row_in_padding < pad_rows; row_in_padding++) {
+        for (uint32_t row_in_padding{0}; row_in_padding < pad_rows; row_in_padding++) {
             uint32_t col{0};
             for (; col + repeat_cols <= cols; col += repeat_cols) {
 
@@ -309,11 +309,11 @@ Result<Element> Reader<Element>::LargeImpl::score(
 
     uint32_t row{0};
     for (; row + repeat_rows <= rows; row += repeat_rows) {
-        for (uint32_t row_in_repetition; row_in_repetition < repeat_rows; row_in_repetition++) {
+        for (uint32_t row_in_repetition{0}; row_in_repetition < repeat_rows; row_in_repetition++) {
 
             uint32_t col{0};
             for (; col + repeat_cols <= cols; col += repeat_cols) {
-                for (uint32_t col_in_repetition; col_in_repetition < repeat_cols; col_in_repetition++) {
+                for (uint32_t col_in_repetition{0}; col_in_repetition < repeat_cols; col_in_repetition++) {
 
                     auto const& calced_elem = calced[(row + row_in_repetition) * pitch + (col + col_in_repetition)];
                     auto const& answer_elem = repeat[size_t{row_in_repetition} * rows + col_in_repetition];
@@ -324,7 +324,7 @@ Result<Element> Reader<Element>::LargeImpl::score(
                 }
             }
 
-            for (uint32_t col_in_padding; col_in_padding < repeat_cols; col_in_padding++) {
+            for (uint32_t col_in_padding{0}; col_in_padding < repeat_cols; col_in_padding++) {
 
                 auto const& calced_elem = calced[(row + row_in_repetition) * pitch + (col + col_in_padding)];
                 auto const& answer_elem = pad_right[size_t{row_in_repetition} * rows + col_in_padding];
@@ -335,11 +335,11 @@ Result<Element> Reader<Element>::LargeImpl::score(
             }
         }
     }
-    for (uint32_t row_in_padding; row_in_padding < pad_rows; row_in_padding++) {
+    for (uint32_t row_in_padding{0}; row_in_padding < pad_rows; row_in_padding++) {
 
         uint32_t col{0};
         for (; col + repeat_cols <= cols; col += repeat_cols) {
-            for (uint32_t col_in_repetition; col_in_repetition < repeat_cols; col_in_repetition++) {
+            for (uint32_t col_in_repetition{0}; col_in_repetition < repeat_cols; col_in_repetition++) {
 
                 auto const& calced_elem = calced[(row + row_in_padding) * pitch + (col + col_in_repetition)];
                 auto const& answer_elem = pad_bottom[size_t{row_in_padding} * rows + col_in_repetition];
@@ -350,7 +350,7 @@ Result<Element> Reader<Element>::LargeImpl::score(
             }
         }
 
-        for (uint32_t col_in_padding; col_in_padding < repeat_cols; col_in_padding++) {
+        for (uint32_t col_in_padding{0}; col_in_padding < repeat_cols; col_in_padding++) {
 
             auto const& calced_elem = calced[(row + row_in_padding) * pitch + (col + col_in_padding)];
             auto const& answer_elem = pad_right[size_t{row_in_padding} * rows + col_in_padding];
