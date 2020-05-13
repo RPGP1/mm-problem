@@ -130,7 +130,7 @@ template <class Element>
 Reader<Element>::Reader(std::filesystem::path const& path)
 {
     auto mutable_path = path;
-    this->Reader(mutable_path);
+    Reader::Reader(mutable_path);
 }
 
 template <class Element>
@@ -276,24 +276,29 @@ Result<Element> Reader<Element>::LargeImpl::score(
 
     m_stream.seekg(sizeof(uint32_t) * 3);
 
-    uint32_t repeat_rows, repeat_cols;
-    uint32_t pad_rows, pad_cols;
+    uint32_t lhs_repeat_rows, lhs_repeat_cols, rhs_repeat_cols;
+    uint32_t const& rhs_repeat_rows{lhs_repeat_cols};
 
-    m_stream.read(reinterpret_cast<char*>(&repeat_rows), sizeof(repeat_rows));
-    m_stream.read(reinterpret_cast<char*>(&repeat_cols), sizeof(repeat_cols));
-    m_stream.ignore(sizeof(uint32_t) * 2);
-    m_stream.read(reinterpret_cast<char*>(&pad_rows), sizeof(pad_rows));
+    uint32_t lhs_pad_rows, lhs_pad_cols, rhs_pad_cols;
+    uint32_t const& rhs_pad_rows{lhs_pad_cols};
+
+    uint32_t const &repeat_rows{lhs_repeat_rows}, &repeat_cols{rhs_repeat_cols},
+        &pad_rows{lhs_pad_rows}, &pad_cols{rhs_pad_cols};
+
+    m_stream.read(reinterpret_cast<char*>(&lhs_repeat_rows), sizeof(lhs_repeat_rows));
+    m_stream.read(reinterpret_cast<char*>(&rhs_repeat_cols), sizeof(rhs_repeat_cols));
+    m_stream.read(reinterpret_cast<char*>(&lhs_repeat_cols), sizeof(lhs_repeat_cols));
     m_stream.ignore(sizeof(uint32_t));
-    m_stream.read(reinterpret_cast<char*>(&pad_cols), sizeof(pad_cols));
+    m_stream.read(reinterpret_cast<char*>(&lhs_pad_rows), sizeof(lhs_pad_rows));
+    m_stream.read(reinterpret_cast<char*>(&lhs_pad_cols), sizeof(lhs_pad_cols));
+    m_stream.read(reinterpret_cast<char*>(&rhs_pad_cols), sizeof(rhs_pad_cols));
 
-    assert(rows % repeat_rows == pad_rows);
-    assert(cols % repeat_cols == pad_cols);
+    assert(lhs_rows % lhs_repeat_rows == lhs_pad_rows);
+    assert(lhs_cols % lhs_repeat_cols == lhs_pad_cols);
+    assert(rhs_cols % rhs_repeat_cols == rhs_pad_cols);
 
-
-    m_stream.seekg(sizeof(Element) * lhs_rows * lhs_cols
-                       + sizeof(Element) * lhs_cols * rhs_cols,
-        std::ios_base::cur);
-
+    m_stream.ignore(sizeof(Element) * (lhs_repeat_rows + lhs_pad_rows) * (lhs_repeat_cols + lhs_pad_cols));
+    m_stream.ignore(sizeof(Element) * (rhs_repeat_rows + rhs_pad_rows) * (rhs_repeat_cols + rhs_pad_cols));
 
     const auto repeat = std::make_unique<Element[]>(size_t{repeat_rows} * repeat_cols);
     const auto pad_bottom = std::make_unique<Element[]>(size_t{pad_rows} * repeat_cols);
@@ -317,7 +322,7 @@ Result<Element> Reader<Element>::LargeImpl::score(
                 for (uint32_t col_in_repetition{0}; col_in_repetition < repeat_cols; col_in_repetition++) {
 
                     auto const& calced_elem = calced[(row + row_in_repetition) * pitch + (col + col_in_repetition)];
-                    auto const& answer_elem = repeat[size_t{row_in_repetition} * rows + col_in_repetition];
+                    auto const& answer_elem = repeat[size_t{row_in_repetition} * repeat_cols + col_in_repetition];
 
                     if (!this->score_element(result, calced_elem, answer_elem) && violation_callback) {
                         violation_callback(row + row_in_repetition, col + col_in_repetition, calced_elem, answer_elem);
@@ -325,10 +330,10 @@ Result<Element> Reader<Element>::LargeImpl::score(
                 }
             }
 
-            for (uint32_t col_in_padding{0}; col_in_padding < repeat_cols; col_in_padding++) {
+            for (uint32_t col_in_padding{0}; col_in_padding < pad_cols; col_in_padding++) {
 
                 auto const& calced_elem = calced[(row + row_in_repetition) * pitch + (col + col_in_padding)];
-                auto const& answer_elem = pad_right[size_t{row_in_repetition} * rows + col_in_padding];
+                auto const& answer_elem = pad_right[size_t{row_in_repetition} * pad_cols + col_in_padding];
 
                 if (!this->score_element(result, calced_elem, answer_elem) && violation_callback) {
                     violation_callback(row + row_in_repetition, col + col_in_padding, calced_elem, answer_elem);
@@ -343,7 +348,7 @@ Result<Element> Reader<Element>::LargeImpl::score(
             for (uint32_t col_in_repetition{0}; col_in_repetition < repeat_cols; col_in_repetition++) {
 
                 auto const& calced_elem = calced[(row + row_in_padding) * pitch + (col + col_in_repetition)];
-                auto const& answer_elem = pad_bottom[size_t{row_in_padding} * rows + col_in_repetition];
+                auto const& answer_elem = pad_bottom[size_t{row_in_padding} * repeat_cols + col_in_repetition];
 
                 if (!this->score_element(result, calced_elem, answer_elem) && violation_callback) {
                     violation_callback(row + row_in_padding, col + col_in_repetition, calced_elem, answer_elem);
@@ -351,10 +356,10 @@ Result<Element> Reader<Element>::LargeImpl::score(
             }
         }
 
-        for (uint32_t col_in_padding{0}; col_in_padding < repeat_cols; col_in_padding++) {
+        for (uint32_t col_in_padding{0}; col_in_padding < pad_cols; col_in_padding++) {
 
             auto const& calced_elem = calced[(row + row_in_padding) * pitch + (col + col_in_padding)];
-            auto const& answer_elem = pad_right[size_t{row_in_padding} * rows + col_in_padding];
+            auto const& answer_elem = pad_right[size_t{row_in_padding} * pad_cols + col_in_padding];
 
             if (!this->score_element(result, calced_elem, answer_elem) && violation_callback) {
                 violation_callback(row + row_in_padding, col + col_in_padding, calced_elem, answer_elem);
@@ -397,20 +402,21 @@ Result<Element> Reader<Element>::RegularImpl::score(
     std::function<void(uint32_t row, uint32_t col, Element calced, Element answer)> violation_callback)
 {
     auto const& rows = lhs_rows;
+    auto const& cols = rhs_cols;
 
     m_stream.seekg(sizeof(uint32_t) * 3
                    + sizeof(Element) * lhs_rows * lhs_cols
                    + sizeof(Element) * lhs_cols * rhs_cols);
 
-    const auto answer = std::make_unique<Element[]>(size_t{lhs_rows} * rhs_cols);
-    m_stream.read(reinterpret_cast<char*>(answer.get()), sizeof(Element) * lhs_rows * rhs_cols);
+    auto const answer = std::make_unique<Element[]>(size_t{rows} * cols);
+    m_stream.read(reinterpret_cast<char*>(&answer[0]), sizeof(Element) * rows * cols);
 
     auto result = this->create_result(lhs_cols);
 
-    for (uint32_t row = 0; row < lhs_rows; row++) {
-        for (uint32_t col = 0; col < rhs_cols; col++) {
-            if (!this->score_element(result, calced[row * pitch + col], answer[size_t{row} * rows + col])) {
-                violation_callback(row, col, calced[row * pitch + col], answer[size_t{row} * rows + col]);
+    for (uint32_t row = 0; row < rows; row++) {
+        for (uint32_t col = 0; col < cols; col++) {
+            if (!this->score_element(result, calced[row * pitch + col], answer[size_t{row} * cols + col]) && violation_callback) {
+                violation_callback(row, col, calced[row * pitch + col], answer[size_t{row} * cols + col]);
             }
         }
     }
