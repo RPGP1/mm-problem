@@ -21,8 +21,7 @@ namespace MM
 namespace Problem
 {
 
-struct EmptyDirectory : public std::runtime_error
-{
+struct EmptyDirectory : public std::runtime_error {
     explicit EmptyDirectory(std::filesystem::path const&);
 };
 
@@ -94,24 +93,9 @@ private:
 
 
 template <class Element>
-Reader<Element>::Reader(std::filesystem::path const& path)
+Reader<Element>::Reader(std::filesystem::path& path)
 {
     namespace fs = std::filesystem;
-
-    auto construct_from_file = [this](fs::path const& path) {
-        std::ifstream ifs{path, std::ios_base::binary};
-        ifs.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
-
-        ifs.read(reinterpret_cast<char*>(&m_lhs_rows), sizeof(m_lhs_rows));
-        ifs.read(reinterpret_cast<char*>(&m_lhs_cols), sizeof(m_lhs_cols));
-        ifs.read(reinterpret_cast<char*>(&m_rhs_cols), sizeof(m_rhs_cols));
-
-        if (isLarge(m_lhs_rows, m_lhs_cols, m_rhs_cols)) {
-            pimpl.reset(new LargeImpl{std::move(ifs)});
-        } else {
-            pimpl.reset(new RegularImpl{std::move(ifs)});
-        }
-    };
 
     if (fs::is_directory(path)) {
         std::vector<fs::directory_entry> entries;
@@ -125,11 +109,28 @@ Reader<Element>::Reader(std::filesystem::path const& path)
 
         // randomly choose one
         std::random_device device;
-        construct_from_file(entries.at(std::uniform_int_distribution<size_t>{0, entries.size() - 1}(device)));
-
-    } else {
-        construct_from_file(path);
+        path = entries.at(std::uniform_int_distribution<size_t>{0, entries.size() - 1}(device));
     }
+
+    std::ifstream ifs{path, std::ios_base::binary};
+    ifs.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
+
+    ifs.read(reinterpret_cast<char*>(&m_lhs_rows), sizeof(m_lhs_rows));
+    ifs.read(reinterpret_cast<char*>(&m_lhs_cols), sizeof(m_lhs_cols));
+    ifs.read(reinterpret_cast<char*>(&m_rhs_cols), sizeof(m_rhs_cols));
+
+    if (isLarge(m_lhs_rows, m_lhs_cols, m_rhs_cols)) {
+        pimpl.reset(new LargeImpl{std::move(ifs)});
+    } else {
+        pimpl.reset(new RegularImpl{std::move(ifs)});
+    }
+}
+
+template <class Element>
+Reader<Element>::Reader(std::filesystem::path const& path)
+{
+    auto mutable_path = path;
+    this->Reader(mutable_path);
 }
 
 template <class Element>

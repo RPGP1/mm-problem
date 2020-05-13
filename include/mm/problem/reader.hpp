@@ -26,6 +26,7 @@ class Reader final
 public:
     using ElementType = Element;
 
+    explicit Reader(std::filesystem::path&);
     explicit Reader(std::filesystem::path const&);
     ~Reader() = default;
 
