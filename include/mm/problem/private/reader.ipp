@@ -116,8 +116,8 @@ Reader<Element>::Reader(std::filesystem::path& path)
     ifs.exceptions(std::ios_base::badbit | std::ios_base::failbit | std::ios_base::eofbit);
 
     ifs.read(reinterpret_cast<char*>(&m_lhs_rows), sizeof(m_lhs_rows));
-    ifs.read(reinterpret_cast<char*>(&m_lhs_cols), sizeof(m_lhs_cols));
     ifs.read(reinterpret_cast<char*>(&m_rhs_cols), sizeof(m_rhs_cols));
+    ifs.read(reinterpret_cast<char*>(&m_lhs_cols), sizeof(m_lhs_cols));
 
     if (isLarge(m_lhs_rows, m_lhs_cols, m_rhs_cols)) {
         pimpl.reset(new LargeImpl{std::move(ifs)});
@@ -155,9 +155,9 @@ Result<Element> Reader<Element>::ImplBase::create_result(const uint32_t lhs_cols
 
     using std::exp2;
     result.strict_standard = static_cast<Element>(lhs_cols)
-                             * static_cast<Element>(exp2(ELEMENT_DIGIT_2 * 2 - std::numeric_limits<Element>::digits - result.strict_standard_digits));
+                             * static_cast<Element>(exp2(ELEMENT_DIGIT_2 * 2 - std::numeric_limits<Element>::digits + result.strict_standard_digits));
     result.loose_standard = static_cast<Element>(lhs_cols)
-                            * static_cast<Element>(exp2(ELEMENT_DIGIT_2 * 2 - std::numeric_limits<Element>::digits - result.loose_standard_digits));
+                            * static_cast<Element>(exp2(ELEMENT_DIGIT_2 * 2 - std::numeric_limits<Element>::digits + result.loose_standard_digits));
 
     return result;
 }
@@ -167,19 +167,18 @@ bool Reader<Element>::ImplBase::score_element(Result<Element>& result, const Ele
     using std::abs, std::isfinite;
 
     const auto diff = abs(calced - answer);
-    auto is_correct = true;
-
-    if (!isfinite(diff) || diff > result.strict_standard) {
-        result.strict_violations++;
-        result.loose_violations++;
-        is_correct = false;
-    } else if (diff > result.loose_standard) {
-        result.loose_violations++;
-    }
-
     result.max_difference = std::max(diff, result.max_difference);
 
-    return is_correct;
+    if (!isfinite(diff) || diff > result.loose_standard) {
+        result.strict_violations++;
+        result.loose_violations++;
+    } else if (diff > result.strict_standard) {
+        result.strict_violations++;
+    } else {
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -225,10 +224,10 @@ void Reader<Element>::LargeImpl::get(
         const auto pad_right = std::make_unique<Element[]>(size_t{repeat_rows} * pad_cols);
         const auto pad_bottom_right = std::make_unique<Element[]>(size_t{pad_rows} * pad_cols);
 
-        m_stream.read(reinterpret_cast<char*>(repeat.get()), sizeof(Element) * size_t{repeat_rows} * repeat_cols);
-        m_stream.read(reinterpret_cast<char*>(pad_bottom.get()), size_t{pad_rows} * repeat_cols);
-        m_stream.read(reinterpret_cast<char*>(pad_right.get()), size_t{repeat_rows} * pad_cols);
-        m_stream.read(reinterpret_cast<char*>(pad_bottom_right.get()), size_t{pad_rows} * pad_cols);
+        m_stream.read(reinterpret_cast<char*>(repeat.get()), sizeof(Element) * repeat_rows * repeat_cols);
+        m_stream.read(reinterpret_cast<char*>(pad_bottom.get()), sizeof(Element) * pad_rows * repeat_cols);
+        m_stream.read(reinterpret_cast<char*>(pad_right.get()), sizeof(Element) * repeat_rows * pad_cols);
+        m_stream.read(reinterpret_cast<char*>(pad_bottom_right.get()), sizeof(Element) * pad_rows * pad_cols);
 
         uint32_t row{0};
         for (; row + repeat_rows <= rows; row += repeat_rows) {
@@ -241,8 +240,8 @@ void Reader<Element>::LargeImpl::get(
                         &dist[size_t{row + row_in_repetition} * pitch + col]);
                 }
 
-                std::copy_n(&pad_right[0], pad_cols,
-                    &dist[size_t{row + row_in_repetition} + col]);
+                std::copy_n(&pad_right[size_t{row_in_repetition} * pad_cols], pad_cols,
+                    &dist[size_t{row + row_in_repetition} * pitch + col]);
             }
         }
         for (uint32_t row_in_padding{0}; row_in_padding < pad_rows; row_in_padding++) {
@@ -253,8 +252,8 @@ void Reader<Element>::LargeImpl::get(
                     &dist[size_t{row + row_in_padding} * pitch + col]);
             }
 
-            std::copy_n(&pad_right[0], pad_cols,
-                &dist[size_t{row + row_in_padding} + col]);
+            std::copy_n(&pad_bottom_right[size_t{row_in_padding} * pad_cols], pad_cols,
+                &dist[size_t{row + row_in_padding} * pitch + col]);
         }
     };
 
@@ -305,10 +304,10 @@ Result<Element> Reader<Element>::LargeImpl::score(
     const auto pad_right = std::make_unique<Element[]>(size_t{repeat_rows} * pad_cols);
     const auto pad_bottom_right = std::make_unique<Element[]>(size_t{pad_rows} * pad_cols);
 
-    m_stream.read(reinterpret_cast<char*>(repeat.get()), sizeof(Element) * size_t{repeat_rows} * repeat_cols);
-    m_stream.read(reinterpret_cast<char*>(pad_bottom.get()), size_t{pad_rows} * repeat_cols);
-    m_stream.read(reinterpret_cast<char*>(pad_right.get()), size_t{repeat_rows} * pad_cols);
-    m_stream.read(reinterpret_cast<char*>(pad_bottom_right.get()), size_t{pad_rows} * pad_cols);
+    m_stream.read(reinterpret_cast<char*>(repeat.get()), sizeof(Element) * repeat_rows * repeat_cols);
+    m_stream.read(reinterpret_cast<char*>(pad_bottom.get()), sizeof(Element) * pad_rows * repeat_cols);
+    m_stream.read(reinterpret_cast<char*>(pad_right.get()), sizeof(Element) * repeat_rows * pad_cols);
+    m_stream.read(reinterpret_cast<char*>(pad_bottom_right.get()), sizeof(Element) * pad_rows * pad_cols);
 
 
     auto result = this->create_result(lhs_cols);
@@ -320,7 +319,6 @@ Result<Element> Reader<Element>::LargeImpl::score(
             uint32_t col{0};
             for (; col + repeat_cols <= cols; col += repeat_cols) {
                 for (uint32_t col_in_repetition{0}; col_in_repetition < repeat_cols; col_in_repetition++) {
-
                     auto const& calced_elem = calced[(row + row_in_repetition) * pitch + (col + col_in_repetition)];
                     auto const& answer_elem = repeat[size_t{row_in_repetition} * repeat_cols + col_in_repetition];
 
@@ -359,7 +357,7 @@ Result<Element> Reader<Element>::LargeImpl::score(
         for (uint32_t col_in_padding{0}; col_in_padding < pad_cols; col_in_padding++) {
 
             auto const& calced_elem = calced[(row + row_in_padding) * pitch + (col + col_in_padding)];
-            auto const& answer_elem = pad_right[size_t{row_in_padding} * pad_cols + col_in_padding];
+            auto const& answer_elem = pad_bottom_right[size_t{row_in_padding} * pad_cols + col_in_padding];
 
             if (!this->score_element(result, calced_elem, answer_elem) && violation_callback) {
                 violation_callback(row + row_in_padding, col + col_in_padding, calced_elem, answer_elem);
